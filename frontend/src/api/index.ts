@@ -39,34 +39,89 @@ export const authAPI = {
 
 // Bots API
 export const botsAPI = {
-  getAll: async (filters?: { type?: string; status?: string }) => {
+  getAll: async (filters?: { page?: number; limit?: number; type?: string; search?: string; sort?: string }) => {
     const params = new URLSearchParams();
+    if (filters?.page) params.append('page', filters.page.toString());
+    if (filters?.limit) params.append('limit', filters.limit.toString());
     if (filters?.type) params.append('type', filters.type);
-    if (filters?.status) params.append('status', filters.status);
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.sort) params.append('sort', filters.sort);
 
-    const response = await fetch(`${API_BASE_URL}/bots?${params}`, {
-      headers: {
-        'Authorization': `Bearer ${getToken()}`,
-      },
-    });
+    const response = await fetch(`${API_BASE_URL}/bots?${params}`);
     return response.json();
   },
 
   getById: async (id: string) => {
-    const response = await fetch(`${API_BASE_URL}/bots/${id}`, {
-      headers: {
-        'Authorization': `Bearer ${getToken()}`,
-      },
-    });
+    const response = await fetch(`${API_BASE_URL}/bots/${id}`);
+    return response.json();
+  },
+
+  getTypes: async () => {
+    const response = await fetch(`${API_BASE_URL}/bots/types/list`);
+    return response.json();
+  },
+
+  search: async (query: string, limit?: number) => {
+    const params = new URLSearchParams();
+    params.append('q', query);
+    if (limit) params.append('limit', limit.toString());
+
+    const response = await fetch(`${API_BASE_URL}/bots/search/query?${params}`);
     return response.json();
   },
 
   download: async (id: string) => {
-    const response = await fetch(`${API_BASE_URL}/bots/${id}/download`, {
+    const token = localStorage.getItem('token');
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/bots/${id}/download`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        return { success: false, error: error.error || 'Download failed' };
+      }
+
+      // Get filename from content-disposition header
+      const contentDisposition = response.headers.get('content-disposition') || '';
+      let fileName = 'bot.zip';
+      const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+      if (fileNameMatch) {
+        fileName = fileNameMatch[1];
+      }
+
+      // Get blob and other data
+      const blob = await response.blob();
+      const checksum = response.headers.get('x-file-checksum');
+
+      return {
+        success: true,
+        blob,
+        fileName,
+        checksum,
+      };
+    } catch (error) {
+      console.error('[API] Download error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Download failed',
+      };
+    }
+  },
+
+  verify: async (id: string, checksum: string) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/bots/${id}/verify`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${getToken()}`,
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
       },
+      body: JSON.stringify({ checksum }),
     });
     return response.json();
   },

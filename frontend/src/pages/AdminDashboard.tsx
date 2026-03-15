@@ -6,10 +6,12 @@ import { adminAPI } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
 
 interface UploadedBot {
-  id: string;
+  _id?: string;
+  id?: string;
   name: string;
   description: string;
-  uploadedAt: string;
+  uploadedAt?: string;
+  createdAt?: string;
   status: "active" | "pending" | "inactive";
   downloads: number;
   type: string;
@@ -58,11 +60,15 @@ const AdminDashboard = () => {
         setError(response.error || response.message || "Failed to load bots");
       }
     } catch (err) {
-      console.error("Fetch bots error:", err);
+      console.error("[Admin] Fetch bots error:", err);
       setError("Failed to load bots. Is the backend server running on port 5000?");
     } finally {
       setLoading(false);
     }
+  };
+
+  const getBotId = (bot: UploadedBot): string => {
+    return (bot._id as string) || (bot.id as string) || '';
   };
 
   const handleInputChange = (
@@ -140,7 +146,7 @@ const AdminDashboard = () => {
     try {
       const response = await adminAPI.deleteBot(id);
       if (response.success) {
-        setBots(bots.filter((bot) => bot.id !== id));
+        setBots(bots.filter((bot) => getBotId(bot) !== id));
       } else {
         setError("Failed to delete bot");
       }
@@ -261,20 +267,15 @@ const AdminDashboard = () => {
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Bot Type *
                       </label>
-                      <select
+                      <input
+                        type="text"
                         name="type"
                         value={formData.type}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="e.g., Momentum, Mean Reversion, Trend Following"
+                        className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                         required
-                      >
-                        <option value="">Select a type</option>
-                        <option value="momentum">Momentum</option>
-                        <option value="mean-reversion">Mean Reversion</option>
-                        <option value="trend-following">Trend Following</option>
-                        <option value="arbitrage">Arbitrage</option>
-                        <option value="other">Other</option>
-                      </select>
+                      />
                     </div>
                   </div>
                   <div>
@@ -407,7 +408,7 @@ const AdminDashboard = () => {
                     <tbody>
                       {bots.map((bot) => (
                         <tr
-                          key={bot.id}
+                          key={getBotId(bot)}
                           className="border-b border-border hover:bg-secondary/30 transition-colors"
                         >
                           <td className="py-4 px-4">
@@ -435,13 +436,13 @@ const AdminDashboard = () => {
                           </td>
                           <td className="py-4 px-4">
                             <p className="text-sm text-muted-foreground">
-                              {bot.uploadedAt || 'N/A'}
+                              {bot.createdAt ? new Date(bot.createdAt).toLocaleDateString() : bot.uploadedAt || 'N/A'}
                             </p>
                           </td>
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-2">
                               <button
-                                onClick={() => handleDelete(bot.id)}
+                                onClick={() => handleDelete(getBotId(bot))}
                                 className="p-2 hover:bg-red-500/10 rounded-lg transition-colors"
                                 title="Delete bot"
                               >
