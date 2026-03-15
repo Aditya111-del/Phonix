@@ -1,0 +1,23 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "vite",
+  "outputDirectory": "dist",
+  "env": [
+    {
+      "key": "VITE_API_URL",
+      "value": "https://phonix-backend-kbel.onrender.com/api"
+    },
+    {
+      "key": "VITE_GOOGLE_CLIENT_ID",
+      "value": "139168155004-7kc5pgvf9n58nhi4f2accjfn1qu3n7lq.apps.googleusercontent.com"
+    }
+  ],
+  "regions": ["iad1"],
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  }
+}
