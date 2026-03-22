@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { marketsAPI } from "@/api";
-import { Send, Plus, Trash2, MessageSquare, TrendingUp, ChevronRight, Sparkles } from "lucide-react";
+import { Send, Plus, Trash2, MessageSquare, TrendingUp, ChevronRight, Sparkles, Menu, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -162,6 +162,7 @@ const Markets = () => {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -250,6 +251,7 @@ const Markets = () => {
     setMessages([]);
     setCurrentSessionId(null);
     setChatInput("");
+    setIsMobileSidebarOpen(false);
     inputRef.current?.focus();
   };
 
@@ -365,8 +367,24 @@ const Markets = () => {
       <Navbar />
 
       <div className="flex flex-1 overflow-hidden mt-[64px] relative">
+        {/* Mobile Sidebar Overlay */}
+        {isMobileSidebarOpen && (
+          <div 
+            className="absolute inset-0 bg-black/60 z-20 md:hidden backdrop-blur-sm"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+        )}
+
         {/* ── Sidebar ── */}
-        <aside className="w-64 flex-shrink-0 flex flex-col border-r border-white/8 bg-[#18181b] z-20">
+        <aside className={`absolute md:relative flex-shrink-0 flex flex-col border-r border-white/8 bg-[#18181b] z-30 h-full transition-transform duration-300 w-72 md:w-64 ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+          {/* Mobile Closer Header */}
+          <div className="md:hidden flex items-center justify-between p-3 border-b border-white/8">
+            <span className="font-semibold text-sm px-1 text-zinc-200">Menu</span>
+            <button onClick={() => setIsMobileSidebarOpen(false)} className="p-1 hover:bg-white/10 rounded-md transition-colors">
+              <X className="w-5 h-5 text-zinc-400" />
+            </button>
+          </div>
+
           {/* New Chat */}
           <div className="p-3 border-b border-white/8">
             <button
@@ -473,18 +491,42 @@ const Markets = () => {
         </aside>
 
         {/* ── Main Chat Area ── */}
-        <main className="flex-1 flex flex-col overflow-hidden relative">
+        <main className="flex-1 flex flex-col overflow-hidden relative bg-background">
+          {/* Mobile Header Bar */}
+          <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-white/8 bg-[#18181b] z-10 shrink-0">
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setIsMobileSidebarOpen(true)}
+                className="p-1.5 -ml-1.5 text-zinc-400 hover:text-white hover:bg-white/5 rounded-md transition-colors"
+                aria-label="Open menu"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-2 font-semibold text-[15px] tracking-tight text-foreground">
+                <Sparkles className="w-4 h-4 text-primary" />
+                PhonixAI
+              </div>
+            </div>
+            <button
+               onClick={handleNewChat}
+               className="p-1.5 text-primary hover:bg-primary/10 rounded-md transition-colors"
+               aria-label="New chat"
+            >
+               <Plus className="w-5 h-5" />
+            </button>
+          </div>
+
           {/* Messages or Welcome Screen */}
           <div className="flex-1 overflow-y-auto w-full">
             {messages.length === 0 ? (
               /* v0-Style Welcome Screen */
-              <div className="h-full flex flex-col items-center justify-center px-6 pb-20">
-                <h1 className="text-3xl md:text-4xl font-semibold text-foreground mb-8 tracking-tight text-center">
+              <div className="h-full flex flex-col items-center justify-center px-4 md:px-6 pb-20">
+                <h1 className="text-3xl md:text-4xl font-semibold text-foreground mb-8 tracking-tight text-center px-4">
                   What do you want to analyze?
                 </h1>
 
                 {/* Centered v0 Input Box */}
-                <div className="w-full max-w-2xl bg-[#18181b]/80 border border-white/10 rounded-2xl shadow-2xl flex flex-col transition-all focus-within:bg-[#18181b] focus-within:border-white/20 focus-within:ring-4 focus-within:ring-white/5 focus-within:shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+                <div className="w-full max-w-2xl bg-[#18181b]/80 border border-white/10 rounded-2xl shadow-2xl flex flex-col transition-all focus-within:bg-[#18181b] focus-within:border-white/20 focus-within:ring-4 focus-within:ring-white/5 focus-within:shadow-[0_0_40px_rgba(0,0,0,0.5)] mx-4 md:mx-0">
                   <input
                     type="text"
                     value={chatInput}
@@ -538,32 +580,32 @@ const Markets = () => {
               </div>
             ) : (
               /* Message Thread */
-              <div className="max-w-3xl mx-auto px-6 py-8 space-y-10 pb-40">
+              <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-8 md:space-y-10 pb-32 md:pb-40">
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex gap-5 animate-in fade-in slide-in-from-bottom-2 duration-400 ${
+                    className={`flex gap-3 md:gap-5 animate-in fade-in slide-in-from-bottom-2 duration-400 ${
                       msg.role === "user" ? "justify-end" : "justify-start"
                     }`}
                   >
                     {msg.role === "assistant" && (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border border-white/10 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
-                        <Sparkles className="w-4 h-4 text-zinc-400" />
+                      <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border border-white/10 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+                        <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-zinc-400" />
                       </div>
                     )}
 
-                    <div className={`flex flex-col gap-1.5 max-w-[85%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                    <div className={`flex flex-col gap-1.5 max-w-[90%] md:max-w-[85%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
                       {msg.role === "assistant" && msg.symbol && (
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-[11px] font-medium bg-white/5 border border-white/10 text-zinc-300 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                          <span className="text-[10px] md:text-[11px] font-medium bg-white/5 border border-white/10 text-zinc-300 px-2.5 py-1 rounded-full uppercase tracking-wider">
                             {msg.symbol}
                           </span>
                         </div>
                       )}
 
                       {msg.role === "user" ? (
-                        <div className="bg-[#242424] text-zinc-200 px-5 py-3 rounded-2xl rounded-tr-md shadow-md border border-white/5">
-                          <p className="text-[15px] leading-relaxed font-light">{msg.content}</p>
+                        <div className="bg-[#242424] text-zinc-200 px-4 md:px-5 py-2.5 md:py-3 rounded-[20px] rounded-tr-sm shadow-md border border-white/5">
+                          <p className="text-[14.5px] md:text-[15px] leading-relaxed font-light">{msg.content}</p>
                         </div>
                       ) : (
                         <div className="w-full" onClick={handleCodeAction}>
@@ -617,10 +659,10 @@ const Markets = () => {
 
           {/* ── Pinned Bottom Input (Only visible during chat) ── */}
           {messages.length > 0 && (
-            <div className="absolute bottom-6 left-0 right-0 z-10 pointer-events-none">
-              <div className="max-w-3xl mx-auto px-6">
+            <div className="absolute bottom-4 md:bottom-6 left-0 right-0 z-10 pointer-events-none px-4 md:px-0">
+              <div className="max-w-3xl mx-auto md:px-6">
                 <form id="markets-chat-form" onSubmit={handleFormSubmit} className="pointer-events-auto">
-                  <div className="flex flex-col bg-[#1e1e20] border border-white/10 focus-within:border-white/20 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] transition-all duration-300">
+                  <div className="flex flex-col bg-[#1e1e20] border border-white/10 focus-within:border-white/20 rounded-[20px] shadow-[0_8px_30px_rgb(0,0,0,0.5)] transition-all duration-300">
                     <input
                       ref={inputRef}
                       type="text"
