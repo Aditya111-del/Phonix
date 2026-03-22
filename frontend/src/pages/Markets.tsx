@@ -363,7 +363,7 @@ const Markets = () => {
   }
 
   return (
-    <div className="h-screen max-h-screen overflow-hidden bg-background flex flex-col relative">
+    <div className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-background flex flex-col relative w-full">
       <Navbar />
 
       <div className="flex flex-1 overflow-hidden mt-[64px] relative">
@@ -533,7 +533,7 @@ const Markets = () => {
                     onChange={(e) => setChatInput(e.target.value)}
                     disabled={isLoading}
                     placeholder="Ask PhonixAI to analyze a stock, crypto, or market trend..."
-                    className="w-full bg-transparent text-foreground placeholder-muted-foreground/50 px-5 pt-5 pb-3 focus:outline-none text-[15px] font-medium"
+                    className="w-full bg-transparent text-foreground placeholder-muted-foreground/50 px-5 pt-5 pb-3 focus:outline-none text-[16px] md:text-[15px] font-medium"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
@@ -659,7 +659,7 @@ const Markets = () => {
 
           {/* ── Pinned Bottom Input (Only visible during chat) ── */}
           {messages.length > 0 && (
-            <div className="absolute bottom-4 md:bottom-6 left-0 right-0 z-10 pointer-events-none px-4 md:px-0">
+            <div className="absolute bottom-4 md:bottom-6 left-0 right-0 z-10 pointer-events-none px-4 md:px-0 pb-[env(safe-area-inset-bottom)]">
               <div className="max-w-3xl mx-auto md:px-6">
                 <form id="markets-chat-form" onSubmit={handleFormSubmit} className="pointer-events-auto">
                   <div className="flex flex-col bg-[#1e1e20] border border-white/10 focus-within:border-white/20 rounded-[20px] shadow-[0_8px_30px_rgb(0,0,0,0.5)] transition-all duration-300">
@@ -670,7 +670,7 @@ const Markets = () => {
                       onChange={(e) => setChatInput(e.target.value)}
                       disabled={isLoading}
                       placeholder="Ask a follow-up..."
-                      className="w-full bg-transparent text-zinc-200 placeholder-zinc-500 px-5 pt-4 pb-2 focus:outline-none text-[15px]"
+                      className="w-full bg-transparent text-zinc-200 placeholder-zinc-500 px-5 pt-4 pb-2 focus:outline-none text-[16px] md:text-[15px]"
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault();
