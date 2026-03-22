@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { marketsAPI } from "@/api";
-import { Send, Plus, Trash2, MessageSquare, TrendingUp, ChevronRight, Sparkles, Menu, X } from "lucide-react";
+import { Send, Plus, Trash2, MessageSquare, TrendingUp, ChevronRight, Sparkles, Menu, X, Zap, LogOut, Home } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ const SUGGESTIONS = [
 // ── Component ──────────────────────────────────────────────────────────────────
 
 const Markets = () => {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout: handleLogoutAuth } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -364,9 +364,11 @@ const Markets = () => {
 
   return (
     <div className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-background flex flex-col relative w-full">
-      <Navbar />
+      <div className="hidden md:block">
+        <Navbar />
+      </div>
 
-      <div className="flex flex-1 overflow-hidden mt-[64px] relative">
+      <div className="flex flex-1 overflow-hidden md:mt-[64px] relative">
         {/* Mobile Sidebar Overlay */}
         {isMobileSidebarOpen && (
           <div 
@@ -476,16 +478,33 @@ const Markets = () => {
             </div>
           </div>
 
-          {/* Sidebar Footer */}
-          <div className="p-3 border-t border-white/8">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-primary/20 rounded-lg flex items-center justify-center">
-                <Sparkles className="w-3.5 h-3.5 text-primary" />
+          {/* Sidebar Footer - User Auth */}
+          <div className="p-3 border-t border-white/8 space-y-3">
+            {/* Global Nav Link */}
+            <div className="flex items-center md:hidden">
+              <button onClick={() => window.location.href = '/'} className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-colors border border-white/5">
+                <Home className="w-4 h-4" /> Home
+              </button>
+            </div>
+            
+            {/* User Profile */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                {user?.picture ? (
+                  <img src={user.picture} alt="" className="w-8 h-8 rounded-full border border-primary/50 object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center border border-primary flex-shrink-0">
+                    <span className="text-sm font-bold text-primary-foreground">{user?.name?.charAt(0).toUpperCase() || "U"}</span>
+                  </div>
+                )}
+                <div className="min-w-0 pr-2">
+                  <p className="text-xs font-semibold text-foreground truncate">{user?.name || "Offline"}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{user?.email || "No session"}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-semibold text-foreground">PhonixAI</p>
-                <p className="text-[10px] text-muted-foreground">nvidia/nemotron-120b</p>
-              </div>
+              <button onClick={handleLogoutAuth} className="p-2 md:hidden hover:bg-red-400/10 hover:text-red-400 rounded-lg transition-colors text-zinc-500">
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </aside>
@@ -502,9 +521,9 @@ const Markets = () => {
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <div className="flex items-center gap-2 font-semibold text-[15px] tracking-tight text-foreground">
-                <Sparkles className="w-4 h-4 text-primary" />
-                PhonixAI
+              <div className="flex items-center gap-1.5 font-bold text-[17px] tracking-tight text-foreground">
+                <Zap className="w-5 h-5 text-primary" />
+                phonix
               </div>
             </div>
             <button
