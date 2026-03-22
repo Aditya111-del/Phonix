@@ -32,6 +32,35 @@ function renderMarkdown(raw: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
+  // ── Protected Code Blocks ──────────────────────────────────────────────────
+  const codeBlocks: string[] = [];
+  text = text.replace(/```([a-z0-9]+)?\r?\n([\s\S]*?)```/gi, (match, lang, code) => {
+    const blockIndex = codeBlocks.length;
+    const displayLang = (lang || 'PLAINTEXT').toUpperCase();
+    codeBlocks.push(`
+      <div class="my-6 rounded-[10px] overflow-hidden bg-[#111113] border border-white/5 shadow-[0_4px_24px_rgba(0,0,0,0.5)] font-sans phonix-code-block">
+        <div class="flex items-center justify-between px-4 py-2 bg-white/[0.02] border-b border-white/5">
+          <span class="text-[10px] font-mono text-zinc-500 font-semibold tracking-widest code-lang-label">${displayLang}</span>
+          <div class="flex items-center gap-1">
+            <button class="flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium text-zinc-400 hover:text-white hover:bg-white/10 rounded-md transition-all code-copy-btn pointer-events-auto">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              <span>COPY</span>
+            </button>
+            <div class="w-[1px] h-3 bg-white/10"></div>
+            <button class="flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium text-zinc-400 hover:text-white hover:bg-white/10 rounded-md transition-all code-dl-btn pointer-events-auto">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <span>DOWNLOAD</span>
+            </button>
+          </div>
+        </div>
+        <div class="p-4 overflow-x-auto">
+          <pre class="text-[13px] font-mono text-zinc-300 pointer-events-auto select-text break-words whitespace-pre-wrap"><code class="code-raw-text">${code.trim()}</code></pre>
+        </div>
+      </div>
+    `);
+    return `@@CODE_BLOCK_${blockIndex}@@`;
+  });
+
   // Tables: detect pipe-separated rows and create sleek Perplexity-style tables
   text = text.replace(/((\|.+\|\r?\n)+)/g, (tableBlock) => {
     const rows = tableBlock.trim().split(/\r?\n/);
@@ -82,10 +111,21 @@ function renderMarkdown(raw: string): string {
     }
   });
 
+  // Inline code tags
+  text = text.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-white/10 text-[13px] font-mono text-zinc-300 rounded border border-white/5">$1</code>');
+
   // Paragraphs
   text = text.replace(/\n\n/g, '</p><p class="mb-5 text-[15px] text-zinc-300 leading-[1.65]">');
   text = text.replace(/\n/g, "<br />");
   text = `<p class="mb-5 text-[15px] text-zinc-300 leading-[1.65]">${text}</p>`;
+
+  // Restore protected blocks (Tables and Code)
+  codeBlocks.forEach((block, index) => {
+    text = text.replace(`@@CODE_BLOCK_${index}@@`, `</p>${block}<p class="mb-5 text-[15px] text-zinc-300 leading-[1.65]">`);
+  });
+
+  // Clean up any empty lingering P tags
+  text = text.replace(/<p[^>]*><\/p>/g, '');
 
   return text;
 }
@@ -130,6 +170,43 @@ const Markets = () => {
   }, []);
 
   useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
+
+  // Handle Code Copy/Download Click Delegation
+  const handleCodeAction = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const copyBtn = target.closest('.code-copy-btn');
+    const dlBtn = target.closest('.code-dl-btn');
+
+    if (copyBtn) {
+      const wrapper = copyBtn.closest('.phonix-code-block');
+      const codeText = wrapper?.querySelector('.code-raw-text')?.textContent;
+      if (codeText) {
+        navigator.clipboard.writeText(codeText);
+        const originalHtml = copyBtn.innerHTML;
+        copyBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="text-green-400">COPIED!</span>`;
+        setTimeout(() => { if (copyBtn) copyBtn.innerHTML = originalHtml; }, 2000);
+      }
+    }
+
+    if (dlBtn) {
+      const wrapper = dlBtn.closest('.phonix-code-block');
+      const langNode = wrapper?.querySelector('.code-lang-label');
+      const lang = langNode?.textContent?.toLowerCase() || '';
+      const ext = lang === 'python' ? 'py' : lang === 'javascript' || lang === 'js' ? 'js' : lang === 'typescript' ? 'ts' : lang === 'html' ? 'html' : lang === 'css' ? 'css' : 'txt';
+      const codeText = wrapper?.querySelector('.code-raw-text')?.textContent;
+      if (codeText) {
+        const blob = new Blob([codeText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `phonix_snippet.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    }
+  };
 
   // Load sessions on mount
   useEffect(() => {
@@ -203,34 +280,46 @@ const Markets = () => {
     setIsLoading(true);
 
     try {
-      const res = await marketsAPI.analyze("", text, null, [], currentSessionId || undefined);
+      // ── Stream UI Initialization ──
+      const aiMsgId = (Date.now() + 1).toString();
 
-      if (res.success) {
-        const aiMsg: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: res.analysis,
-          symbol: res.symbol,
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, aiMsg]);
+      // ── Execute Stream Buffer ──
+      const stream = marketsAPI.analyzeStream("", text, null, [], currentSessionId || undefined);
+      let finalContent = "";
+      let activeSessionId = currentSessionId;
+      let msgInitialized = false;
 
-        // Update or create session
-        if (res.sessionId) {
-          setCurrentSessionId(res.sessionId);
-          // Refresh sessions list
-          await loadSessions();
+      for await (const chunk of stream) {
+        if (!msgInitialized) {
+          msgInitialized = true;
+          setIsLoading(false); // Hide the "Thinking..." bubbles
+          
+          setMessages((prev) => [
+            ...prev,
+            { id: aiMsgId, role: "assistant", content: "", timestamp: new Date() }
+          ]);
         }
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            role: "assistant",
-            content: `⚠️ ${res.error || "Analysis failed. Please try again."}`,
-            timestamp: new Date(),
-          },
-        ]);
+        if (chunk.error) {
+          throw new Error(chunk.error);
+        }
+        if (chunk.content) {
+          finalContent += chunk.content;
+          setMessages((prev) => 
+            prev.map(m => m.id === aiMsgId ? { ...m, content: finalContent } : m)
+          );
+        }
+        if (chunk.isDone) {
+          if (chunk.sessionId && !activeSessionId) {
+            activeSessionId = chunk.sessionId;
+            setCurrentSessionId(chunk.sessionId);
+            loadSessions();
+          }
+          if (chunk.symbol) {
+             setMessages((prev) => 
+               prev.map(m => m.id === aiMsgId ? { ...m, symbol: chunk.symbol } : m)
+             );
+          }
+        }
       }
     } catch (err) {
       setMessages((prev) => [
@@ -477,7 +566,7 @@ const Markets = () => {
                           <p className="text-[15px] leading-relaxed font-light">{msg.content}</p>
                         </div>
                       ) : (
-                        <div className="w-full">
+                        <div className="w-full" onClick={handleCodeAction}>
                           <div
                             className="text-[15px] leading-relaxed max-w-none text-zinc-300"
                             dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}

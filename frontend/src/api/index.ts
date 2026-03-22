@@ -164,6 +164,50 @@ export const marketsAPI = {
     return response.json();
   },
 
+  analyzeStream: async function* (
+    symbol: string,
+    question: string,
+    marketData: Record<string, unknown> | null,
+    news: Array<Record<string, unknown>>,
+    sessionId?: string
+  ) {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/markets/analyze`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        symbol,
+        question,
+        marketData,
+        news,
+        sessionId,
+        stream: true,
+      }),
+    });
+
+    if (!response.ok) throw new Error('API Error');
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('No stream available');
+    
+    const decoder = new TextDecoder();
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+          try {
+            yield JSON.parse(line.slice(6));
+          } catch (e) {}
+        }
+      }
+    }
+  },
+
   getSessions: async () => {
     const token = localStorage.getItem('token');
     const response = await fetch(`${API_BASE_URL}/markets/sessions`, {
