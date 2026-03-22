@@ -1,9 +1,10 @@
 import Navbar from "@/components/Navbar";
-import { Upload, Edit2, Trash2, Eye } from "lucide-react";
+import { Upload, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { adminAPI } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 interface UploadedBot {
   _id?: string;
@@ -91,21 +92,6 @@ const AdminDashboard = () => {
       return;
     }
 
-    // Validate file size (100MB limit)
-    const maxSize = 100 * 1024 * 1024; // 100MB in bytes
-    if (file.size > maxSize) {
-      setError(`File size exceeds 100MB limit. Your file: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
-      return;
-    }
-
-    // Validate file extension
-    const allowedExtensions = ['zip', 'rar', '7z', 'tar'];
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
-      setError(`Invalid file type. Allowed: ${allowedExtensions.join(', ')}`);
-      return;
-    }
-
     setUploading(true);
     setError("");
 
@@ -129,7 +115,7 @@ const AdminDashboard = () => {
         setFormData({ name: "", description: "", type: "", version: "1.0.0" });
         setFile(null);
         setShowUploadForm(false);
-        alert(`✅ Bot "${response.data.name}" uploaded successfully!`);
+        toast.success(`Bot "${response.data.name}" uploaded successfully!`);
       } else {
         setError(response.error || response.message || "Upload failed");
       }
@@ -143,15 +129,32 @@ const AdminDashboard = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this bot?")) return;
     try {
       const response = await adminAPI.deleteBot(id);
       if (response.success) {
         setBots(bots.filter((bot) => getBotId(bot) !== id));
+        toast.success("Bot deleted successfully");
       } else {
-        setError("Failed to delete bot");
+        toast.error("Failed to delete bot");
       }
     } catch (err) {
-      setError("Delete failed");
+      toast.error("Delete failed");
+      console.error(err);
+    }
+  };
+
+  const handleStatusChange = async (id: string, status: "active" | "pending" | "inactive") => {
+    try {
+      const response = await adminAPI.updateBotStatus(id, status);
+      if (response.success) {
+        setBots(bots.map((bot) => getBotId(bot) === id ? { ...bot, status } : bot));
+        toast.success(`Status updated to "${status}"`);
+      } else {
+        toast.error(response.error || "Status update failed");
+      }
+    } catch (err) {
+      toast.error("Status update failed");
       console.error(err);
     }
   };
@@ -398,7 +401,7 @@ const AdminDashboard = () => {
                           Downloads
                         </th>
                         <th className="text-left py-3 px-4 font-semibold text-foreground">
-                          Version
+                          Uploaded
                         </th>
                         <th className="text-left py-3 px-4 font-semibold text-foreground">
                           Actions
@@ -421,13 +424,15 @@ const AdminDashboard = () => {
                             </span>
                           </td>
                           <td className="py-4 px-4">
-                            <span
-                              className={`inline-block px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(
-                                bot.status
-                              )}`}
+                            <select
+                              value={bot.status}
+                              onChange={(e) => handleStatusChange(getBotId(bot), e.target.value as "active" | "pending" | "inactive")}
+                              className={`text-xs font-medium px-2 py-1 rounded border border-border bg-background text-foreground focus:outline-none cursor-pointer`}
                             >
-                              {bot.status}
-                            </span>
+                              <option value="active">Active</option>
+                              <option value="pending">Pending</option>
+                              <option value="inactive">Inactive</option>
+                            </select>
                           </td>
                           <td className="py-4 px-4">
                             <p className="font-medium text-foreground">

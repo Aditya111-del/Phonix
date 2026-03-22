@@ -31,18 +31,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB limit
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /zip|rar|7z|tar|gz/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = /application\/(zip|x-rar-compressed|x-7z-compressed|x-tar|gzip|x-gzip)/;
-    
-    if (mimetype.test(file.mimetype) || extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Only archive files are allowed (zip, rar, 7z, tar, gz)'));
-    }
-  },
+  limits: { fileSize: 2000 * 1024 * 1024 }, // 2GB limit
+  // No file filter - allow any file type
 });
 
 // Get all bots (admin only)
@@ -78,7 +68,7 @@ router.post('/upload', authenticate, adminOnly, upload.single('file'), async (re
 
     console.log('[Admin/Upload] Form data:', { name, description, type, version });
 
-    // Validation
+    // Minimal validation - just check required fields exist
     if (!name || !description || !type || !req.file) {
       console.log('[Admin/Upload] Validation failed - missing fields');
       return res.status(400).json({
@@ -87,21 +77,6 @@ router.post('/upload', authenticate, adminOnly, upload.single('file'), async (re
       });
     }
 
-    if (name.length > 100) {
-      return res.status(400).json({
-        success: false,
-        error: 'Bot name cannot exceed 100 characters',
-      });
-    }
-
-    if (description.length > 1000) {
-      return res.status(400).json({
-        success: false,
-        error: 'Description cannot exceed 1000 characters',
-      });
-    }
-
-    // Allow any bot type - users can upload custom types
     console.log('[Admin/Upload] Bot type:', type);
 
     // Calculate file checksum for integrity
@@ -109,17 +84,10 @@ router.post('/upload', authenticate, adminOnly, upload.single('file'), async (re
     const fileBuffer = fs.readFileSync(req.file.path);
     const checksum = crypto.createHash('sha256').update(fileBuffer).digest('hex');
 
-    // Parse optional fields
+    // Parse optional fields (don't validate, just accept as-is)
     let parsedBacktestResults = null;
     if (backtestResults) {
-      try {
-        parsedBacktestResults = JSON.parse(backtestResults);
-      } catch (e) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid backtestResults JSON format',
-        });
-      }
+      parsedBacktestResults = backtestResults;
     }
 
     const botData = {

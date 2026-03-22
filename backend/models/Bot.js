@@ -7,38 +7,43 @@ export const BotModel = {
       const limit = pagination.limit || 10;
       const skip = (page - 1) * limit;
 
-      let query = Bot.find();
+      // Build the base query conditions object
+      const conditions = {};
 
-      // Apply filters
+      // Apply status filter
       if (filters.status) {
-        query = query.where('status').equals(filters.status);
+        conditions.status = filters.status;
       } else {
-        // Default: only active bots
-        query = query.where('status').equals('active');
+        conditions.status = 'active';
       }
 
+      // Apply type filter
       if (filters.type) {
-        query = query.where('type').equals(filters.type);
+        conditions.type = filters.type;
       }
 
+      // Apply public filter
       if (filters.isPublic !== undefined) {
-        query = query.where('isPublic').equals(filters.isPublic);
+        conditions.isPublic = filters.isPublic;
       } else {
-        // Default: only public bots
-        query = query.where('isPublic').equals(true);
+        conditions.isPublic = true;
       }
 
+      // Apply uploadedBy filter
       if (filters.uploadedBy) {
-        query = query.where('uploadedBy').equals(filters.uploadedBy);
+        conditions.uploadedBy = filters.uploadedBy;
       }
 
+      // Apply search filter: use $or at the find() level (fixed from invalid .query.$or chaining)
       if (filters.search) {
-        query = query.$or([
+        conditions.$or = [
           { name: { $regex: filters.search, $options: 'i' } },
           { description: { $regex: filters.search, $options: 'i' } },
-          { tags: { $regex: filters.search, $options: 'i' } },
-        ]);
+          { tags: { $in: [new RegExp(filters.search, 'i')] } },
+        ];
       }
+
+      let query = Bot.find(conditions);
 
       const total = await Bot.countDocuments(query);
 

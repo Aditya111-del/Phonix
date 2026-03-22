@@ -1,25 +1,30 @@
 import { useState } from "react";
-import { ChevronDown, ExternalLink, Zap, LogOut, User } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { ChevronDown, ExternalLink, Zap, LogOut, User, Menu, X } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
-  { label: "Home", active: true, path: "/" },
+  { label: "Home", path: "/" },
   { label: "Markets", path: "/markets" },
   { label: "Bots", path: "/bots" },
-  { label: "Trade", hasDropdown: true },
-  { label: "Resources", hasDropdown: true },
 ];
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const handleLogout = () => {
     logout();
     setShowProfileMenu(false);
     navigate("/login");
+  };
+
+  const isActive = (path: string) => {
+    if (path === "/") return location.pathname === "/";
+    return location.pathname.startsWith(path);
   };
 
   return (
@@ -39,24 +44,24 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Center Nav */}
+      {/* Center Nav – Desktop */}
       <div className="hidden md:flex items-center bg-secondary/30 rounded-full px-2 py-2 border border-border/50 backdrop-blur-sm">
         {navItems.map((item) => (
           <button
             key={item.label}
-            onClick={() => item.path && navigate(item.path)}
+            onClick={() => navigate(item.path)}
             className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
-              item.active
+              isActive(item.path)
                 ? "bg-primary text-primary-foreground shadow-lg"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
             }`}
           >
-            {item.active && <span className="text-xs">🏠</span>}
+            {item.label === "Home" && isActive(item.path) && <span className="text-xs">🏠</span>}
             {item.label}
-            {item.hasDropdown && <ChevronDown className="w-3 h-3" />}
           </button>
         ))}
       </div>
+
 
       {/* Right Actions */}
       <div className="hidden md:flex items-center gap-4">

@@ -27,11 +27,18 @@ const Profile = () => {
     navigate("/login");
   };
 
-  const createdAt = new Date().toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "N/A";
+    try {
+      return new Date(dateStr).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch {
+      return "N/A";
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background pt-20 pb-10">
@@ -119,7 +126,7 @@ const Profile = () => {
                   <Calendar className="w-5 h-5 text-primary" />
                   <p className="text-sm text-muted-foreground">Member Since</p>
                 </div>
-                <p className="text-foreground font-medium">{createdAt}</p>
+                <p className="text-foreground font-medium">{formatDate((user as any).createdAt)}</p>
               </div>
             </div>
 

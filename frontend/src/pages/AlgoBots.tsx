@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { botsAPI } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 interface Bot {
   _id: string;
@@ -90,7 +91,7 @@ const AlgoBots = () => {
 
   const handleDownload = async (botId: string, botName: string) => {
     if (!isAuthenticated) {
-      alert("Please sign in first to download bots");
+      toast.error("Please sign in first to download bots");
       navigate("/login");
       return;
     }
@@ -110,12 +111,12 @@ const AlgoBots = () => {
       });
 
       if (!response.success) {
-        alert(`Download failed: ${response.error || "Unknown error"}`);
+        toast.error(`Download failed: ${response.error || "Unknown error"}`);
         return;
       }
 
       if (!response.blob) {
-        alert("Download failed: No file data received");
+        toast.error("Download failed: No file data received");
         return;
       }
 
@@ -130,10 +131,10 @@ const AlgoBots = () => {
       window.URL.revokeObjectURL(url);
 
       console.log("[AlgoBots] Download completed for:", botName);
-      alert(`Bot "${botName}" downloaded successfully!`);
+      toast.success(`"${botName}" downloaded successfully!`);
     } catch (err) {
       console.error("[AlgoBots] Download error:", err);
-      alert(`Download failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      toast.error(`Download failed: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
       setLoading(false);
     }

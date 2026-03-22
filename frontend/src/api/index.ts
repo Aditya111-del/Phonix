@@ -143,7 +143,8 @@ export const marketsAPI = {
     symbol: string,
     question: string,
     marketData: Record<string, unknown> | null,
-    news: Array<Record<string, unknown>>
+    news: Array<Record<string, unknown>>,
+    sessionId?: string
   ) => {
     const token = localStorage.getItem('token');
     const response = await fetch(`${API_BASE_URL}/markets/analyze`, {
@@ -157,7 +158,33 @@ export const marketsAPI = {
         question,
         marketData,
         news,
+        sessionId,
       }),
+    });
+    return response.json();
+  },
+
+  getSessions: async () => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/markets/sessions`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return response.json();
+  },
+
+  getSession: async (id: string) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/markets/sessions/${id}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return response.json();
+  },
+
+  deleteSession: async (id: string) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/markets/sessions/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
     });
     return response.json();
   },
